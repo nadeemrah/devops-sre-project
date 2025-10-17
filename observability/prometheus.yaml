@@ -1,0 +1,49 @@
+# minimal values for kube-prometheus-stack to enable scraping and basic dashboards
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelector: {}
+    podMonitorSelector: {}
+    ruleSelector: {}
+    retention: "15d"
+    scrapeInterval: "30s"
+    externalLabels:
+      cluster: "observability-eks"
+
+grafana:
+  enabled: true
+  adminUser: admin
+  adminPassword: admin
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+    datasources:
+      enabled: true
+      label: grafana_datasource
+
+kubeStateMetrics:
+  enabled: true
+
+nodeExporter:
+  enabled: true
+
+prometheusOperator:
+  admissionWebhooks:
+    enabled: false
+
+additionalServiceMonitors:
+  - name: my-app
+    selector:
+      matchLabels:
+        app: backend
+    namespaceSelector:
+      any: true
+    endpoints:
+      - port: http-metrics
+        interval: 15s
+        path: /metrics
+
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    routePrefix: /

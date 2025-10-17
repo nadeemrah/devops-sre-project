@@ -1,0 +1,55 @@
+name: CI-CD: Build & Push to ECR
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+  BACKEND_IMAGE: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/devops-sre-backend
+  FRONTEND_IMAGE: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/devops-sre-frontend
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build backend image
+        run: |
+          docker build -t $BACKEND_IMAGE:${{ github.sha }} ./app-backend/app
+          docker push $BACKEND_IMAGE:${{ github.sha }}
+          echo "BACKEND_IMAGE_TAG=${BACKEND_IMAGE}:${{ github.sha }}" >> $GITHUB_ENV
+
+      - name: Build frontend image
+        run: |
+          docker build -t $FRONTEND_IMAGE:${{ github.sha }} ./app-frontend
+          docker push $FRONTEND_IMAGE:${{ github.sha }}
+          echo "FRONTEND_IMAGE_TAG=${FRONTEND_IMAGE}:${{ github.sha }}" >> $GITHUB_ENV
+
+      - name: Update k8s manifests in repo 
+        run: |
+          git config user.email "nadeemrahaman80@gmail.com"
+          git config user.name "nadeemrah"
+          sed -i "s|<ECR_BACKEND_IMAGE_PLACEHOLDER>|${BACKEND_IMAGE}:${{ github.sha }}|g" k8s/backend/backend-deployment.yaml
+          sed -i "s|<ECR_FRONTEND_IMAGE_PLACEHOLDER>|${FRONTEND_IMAGE}:${{ github.sha }}|g" k8s/frontend/frontend-deployment.yaml
+          git add k8s/backend/backend-deployment.yaml k8s/frontend/frontend-deployment.yaml
+          git commit -m "ci: update images to ${{ github.sha }}" || echo "no changes"
+          git push origin HEAD:main || echo "push failed - make sure CI has push permissions or use ArgoCD automated sync"
+
+      - name: Notify ArgoCD
+        run: |
+          echo "If ArgoCD is configured with automated sync, it will pick up the updated manifests."
