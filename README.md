@@ -3,7 +3,10 @@
 ## Overview
 This repository contains a complete end-to-end solution for deploying a simple two-tier web application (FastAPI backend + Nginx frontend) to an Amazon EKS cluster provisioned via Terraform. It includes CI (GitHub Actions), GitOps (Argo CD), and an observability stack (Prometheus/Grafana + Fluentd -> CloudWatch).
 
-## Architecture (high-level)
+## Architecture 
+
+![Uploading image.png…]()
+
 
 - Terraform provisions VPC and EKS across multiple AZs.
 - Node groups:
