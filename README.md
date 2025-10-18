@@ -5,7 +5,7 @@ This repository contains a complete end-to-end solution for deploying a simple t
 
 ## Architecture 
 
-![Uploading image.png…]()
+<img width="4800" height="2714" alt="image" src="https://github.com/user-attachments/assets/4192d41f-72b9-4d34-a5ce-f3c8e25004b0" />
 
 
 - Terraform provisions VPC and EKS across multiple AZs.
